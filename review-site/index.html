@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>동일 Morning Call</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: 아침 사내 조간지 — 차분하고 빠르게 훑는 업무용
+IDEA: 부서별로 접어 돌리는 1면 브리핑지, 칸마다 법무 체크 도장
+PICTURE: 오늘 자 브리핑 보드 그 자체(부문 탭 + 이슈 카드)
+COLOUR and TYPE: 흰 바탕, 잉크 #0b0b10, 하늘색(회사 대표색) 띠, 주의는 코랄 / Space Grotesk 숫자 + IBM Plex Sans KR
+LAYOUT: 그린 마스트헤드(제목·날짜·건수) → 부문 탭 → 카드 그리드 → 고지
+*/
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#07121a);--ink:light-dark(#0b0b10,#e9f2f7);--sub:light-dark(#4a535a,#9fb0bd);
+--line:light-dark(#e1e8ee,#1b2e3d);--card:light-dark(#ffffff,#0c1a26);--mist:light-dark(#e8f5fc,#0e2536);
+--green:#1592d4;--deep:light-dark(#0a6aa3,#5cc3f0);--coral:#ff6f59;--band:light-dark(#1592d4,#0b3a57)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "IBM Plex Sans KR",system-ui,sans-serif;overflow-x:clip;word-break:keep-all;overflow-wrap:break-word}
+.band{padding:clamp(24px,4vw,52px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.mast{background:var(--band);color:#fff}
+.mast .top{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:end;justify-content:space-between}
+.kicker{font-size:14px;opacity:.85;margin:0 0 6px}
+h1{font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0;text-wrap:balance;font-weight:700}
+.subt{margin:8px 0 0;font-size:clamp(17px,2vw,21px);font-weight:500;opacity:.92}
+.datebox{display:flex;align-items:center;gap:8px}
+.datebox button{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font-size:18px;cursor:pointer}
+.datebox button:disabled{opacity:.35;cursor:default}
+.datebox button:focus-visible,.tab:focus-visible,.ok:focus-visible,.all:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+.today{font:700 clamp(22px,3vw,30px)/1 "Space Grotesk",sans-serif;white-space:nowrap;min-width:9ch;text-align:center}
+.figs{display:flex;flex-wrap:wrap;gap:0;margin-top:26px;border-top:1px solid rgba(255,255,255,.35)}
+.fig1{padding:14px 28px 0 0;margin-right:28px;border-right:1px solid rgba(255,255,255,.35)}
+.fig1:last-child,.fig1:has(+.fig1[hidden]){border-right:0}
+.fig1 b{display:block;font:700 clamp(28px,3.4vw,40px)/1 "Space Grotesk",sans-serif}
+.fig1 span{font-size:14px;opacity:.9}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;padding:18px max(5vw,16px);border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:2}
+.tabs .wrap{display:flex;flex-wrap:wrap;gap:8px;width:100%;align-items:center}
+.tab{min-height:44px;padding:0 16px;border-radius:22px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:500 15px "IBM Plex Sans KR",sans-serif;cursor:pointer}
+.tab[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab i{font:normal 500 13px "Space Grotesk";opacity:.7;margin-left:6px}
+.all{margin-left:auto;min-height:44px;padding:0 18px;border-radius:22px;border:0;background:var(--green);color:#fff;font:700 15px "IBM Plex Sans KR";cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:var(--sub)}
+.chip{padding:2px 10px;border-radius:12px;background:var(--mist);color:var(--deep);font-weight:700}
+.lv{font-weight:700}.lv.high{color:var(--coral)}
+.st{margin-left:auto;font-weight:700}.st.pending{color:var(--coral)}.st.approved{color:var(--deep)}
+.card h3{margin:0;font-size:19px;line-height:1.35;text-wrap:balance}
+.card p{margin:0;font-size:15.5px;color:var(--ink)}
+.chk{background:var(--mist);border-radius:10px;padding:12px 14px;font-size:15px}
+.chk b{display:block;font-size:13px;color:var(--deep);margin-bottom:2px}
+.foot{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:auto;font-size:13px;color:var(--sub)}
+.foot a{color:var(--deep);font-weight:500;overflow-wrap:anywhere}
+.ok{margin-left:auto;min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--green);background:transparent;color:var(--deep);font:700 14px "IBM Plex Sans KR";cursor:pointer}
+.ok.on{background:var(--green);color:#fff}
+.empty{padding:48px 20px;text-align:center;color:var(--sub);border:1px dashed var(--line);border-radius:14px}
+.note{font-size:13px;color:var(--sub);margin:0}
+.notice{border-top:1px solid var(--line)}
+.notice p{max-width:70ch;margin:0 0 6px;font-size:14px;color:var(--sub)}
+#msg{font-size:14px;color:var(--coral);margin:12px 0 0;min-height:1em}
+@media(max-width:600px){.all{margin-left:0;width:100%}.fig1{padding-right:18px;margin-right:18px}.st{margin-left:0}}
+@media(prefers-reduced-motion:no-preference){.card{animation:up .35s ease both}@keyframes up{from{opacity:0;transform:translateY(6px)}}}
+</style>
+</head>
+<body>
+<header class="mast band">
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <p class="kicker">동일토건 법무팀 · AI 데일리 브리핑</p>
+        <h1>동일 Morning Call</h1>
+        <p class="subt">부문별 오늘의 법률·규제 리스크</p>
+      </div>
+      <div class="datebox" aria-label="날짜 선택">
+        <button id="prev" aria-label="이전 날짜" disabled>‹</button>
+        <div class="today" id="today">—</div>
+        <button id="next" aria-label="다음 날짜" disabled>›</button>
+      </div>
+    </div>
+    <div class="figs">
+      <div class="fig1"><b id="fTotal">0</b><span>오늘 이슈</span></div>
+      <div class="fig1"><b id="fHigh">0</b><span>주의 등급</span></div>
+      <div class="fig1" id="pendBox"><b id="fPend">0</b><span>검수 대기</span></div>
+    </div>
+  </div>
+</header>
+<nav class="tabs" aria-label="부문">
+  <div class="wrap" id="tabs"></div>
+</nav>
+<main class="band">
+  <div class="wrap">
+    <p class="note" id="who">브리핑을 불러오는 중입니다.</p>
+    <p id="msg" role="status"></p>
+    <div class="grid" id="grid" style="margin-top:14px"></div>
+  </div>
+</main>
+<footer class="band notice">
+  <div class="wrap">
+    <p>매일 오전 AI가 정부 보도자료·입법예고·법률 뉴스레터 등 공개 자료를 검색해 부문별로 정리하고, 법무팀 검수를 거쳐 게시합니다.</p>
+    <p>이 브리핑은 법률 자문이 아닙니다. 원문은 출처 링크에서 확인하시고, 구체적 사안은 법무팀과 협의해 주세요.</p>
+  </div>
+</footer>
+<script>
+{
+const DEPTS=[["all","전체"],["safety","안전"],["marketing","마케팅"],["construction","공사·현장"],["business","사업"],["finance","재무"],["admin","경영지원"]];
+const DN=Object.fromEntries(DEPTS);
+const LV={high:"주의",mid:"확인",low:"참고"};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl=u=>/^https?:\/\//i.test(String(u||""))?String(u):"";
+let docs=[],idx=0,dept="all",editor=false,ready=false,db=null,busy=false;
+
+function fmt(d){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d||"");if(!m)return String(d||"");const w="일월화수목금토"[new Date(+m[1],m[2]-1,+m[3]).getDay()];return `${+m[2]}.${+m[3]} (${w})`}
+function cur(){return docs[idx]}
+function visible(items){return editor?items:items.filter(i=>i.status==="approved")}
+
+function render(){
+  const d=cur();
+  $("prev").disabled=!d||idx>=docs.length-1;$("next").disabled=!d||idx<=0;
+  $("today").textContent=d?fmt(d.date):"—";
+  const items=d&&Array.isArray(d.items)?visible(d.items):[];
+  const all=d&&Array.isArray(d.items)?d.items:[];
+  $("fTotal").textContent=items.length;
+  $("fHigh").textContent=items.filter(i=>i.level==="high").length;
+  $("fPend").textContent=all.filter(i=>i.status!=="approved").length;$("pendBox").hidden=!editor;
+  const cnt=k=>k==="all"?items.length:items.filter(i=>i.dept===k).length;
+  $("tabs").innerHTML=DEPTS.map(([k,n])=>`<button class="tab" data-k="${k}" aria-pressed="${k===dept}">${n}<i>${cnt(k)}</i></button>`).join("")+
+    (editor&&all.some(i=>i.status!=="approved")?`<button class="all" id="approveAll">오늘 자 전체 검수 완료</button>`:"");
+  const list=dept==="all"?items:items.filter(i=>i.dept===dept);
+  if(!ready){$("grid").innerHTML="";return}
+  if(!d){$("grid").innerHTML=`<div class="empty">아직 등록된 브리핑이 없습니다. 첫 브리핑은 평일 아침에 자동으로 올라옵니다.</div>`;return}
+  if(!list.length){$("grid").innerHTML=`<div class="empty">${!editor&&all.length?"오늘 브리핑은 법무팀 검수 중입니다. 검수가 끝나면 여기에 표시됩니다.":"이 부문에는 오늘 등록된 이슈가 없습니다."}</div>`;return}
+  $("grid").innerHTML=list.map(i=>{const u=safeUrl(i.url);const on=i.status==="approved";return `<article class="card">
+    <div class="meta"><span class="chip">${esc(DN[i.dept]||i.dept)}</span><span class="lv ${esc(i.level)}">${esc(LV[i.level]||"")}</span>${i.published?`<span>${esc(i.published)}</span>`:""}<span class="st ${on?"approved":"pending"}">${on?"검수 완료":"검수 대기"}</span></div>
+    <h3>${esc(i.title)}</h3>
+    <p>${esc(i.summary)}</p>
+    ${i.check?`<div class="chk"><b>법무 체크</b>${esc(i.check)}</div>`:""}
+    <div class="foot">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.source||"원문 보기")} ↗</a>`:`<span>${esc(i.source||"")}</span>`}
+    ${editor?`<button class="ok ${on?"on":""}" data-id="${esc(i.id)}">${on?"검수 취소":"검수 완료"}</button>`:""}</div>
+  </article>`}).join("");
+}
+
+async function save(items){
+  const d=cur();if(!db||!d||busy)return;busy=true;$("msg").textContent="";
+  try{await db.doc("briefings/"+d.id).update({items,reviewedAt:new Date().toISOString()})}
+  catch(e){$("msg").textContent=e&&e.code==="invalid_argument"?"검수 권한이 없습니다. 법무팀(편집 권한)만 검수할 수 있습니다.":"저장하지 못했습니다. 잠시 후 다시 눌러 주세요."}
+  finally{busy=false}
+}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.classList.contains("tab")){dept=t.dataset.k;render();return}
+  if(t.id==="prev"&&idx<docs.length-1){idx++;render();return}
+  if(t.id==="next"&&idx>0){idx--;render();return}
+  const d=cur();if(!d||!Array.isArray(d.items))return;
+  if(t.id==="approveAll"){save(d.items.map(i=>({...i,status:"approved"})));return}
+  if(t.classList.contains("ok")){const id=t.dataset.id;save(d.items.map(i=>i.id===id?{...i,status:i.status==="approved"?"pending":"approved"}:{...i}));}
+});
+
+const use=async n=>{for(let t=0;t<50&&!(window.claude&&window.claude.use);t++)await new Promise(r=>setTimeout(r,100));try{return window.claude&&window.claude.use?await window.claude.use(n):null}catch(e){return null}};
+render();
+(async()=>{
+  const user=await use("user");
+  try{editor=!!(user&&(await user.canEdit()||await user.isOwner()))}catch(e){editor=false}
+  db=await use("db");
+  if(!db){ready=true;$("who").textContent="이 화면에서는 브리핑 데이터를 불러올 수 없습니다. claude.ai에 로그인한 상태로 열어 주세요.";render();return}
+  $("who").textContent=editor?"법무팀 검수 모드 · 카드마다 검수 완료를 누르면 전 직원 화면에 게시됩니다.":"법무팀 검수를 마친 이슈만 표시됩니다.";
+  const timer=setTimeout(()=>{$("msg").textContent="데이터 연결이 지연되고 있습니다. 표시된 내용이 최신이 아닐 수 있습니다."},10000);
+  db.collection("briefings").orderBy("date","desc").limit(60).onSnapshot(snap=>{
+    const keep=cur()?.id;
+    docs=snap.docs.filter(s=>s.exists).map(s=>({id:s.id,...s.data()}));
+    const k=docs.findIndex(x=>x.id===keep);idx=k>=0?k:0;
+    ready=true;
+    if(!snap.metadata.fromCache){clearTimeout(timer);if($("msg").textContent.startsWith("데이터 연결"))$("msg").textContent=""}
+    render();
+  },err=>{clearTimeout(timer);ready=true;$("msg").textContent="브리핑을 불러오지 못했습니다.";render()});
+})();
+}
+</script>
+</body>
+</html>
