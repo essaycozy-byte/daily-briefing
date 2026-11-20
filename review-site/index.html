@@ -58,6 +58,14 @@ h1{font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0;text-wrap:balance;fo
 .foot a{color:var(--deep);font-weight:500;overflow-wrap:anywhere}
 .ok{margin-left:auto;min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--green);background:transparent;color:var(--deep);font:700 14px "IBM Plex Sans KR";cursor:pointer}
 .ok.on{background:var(--green);color:#fff}
+.btns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}.btns .ok{margin-left:0}
+.ed{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--sub);font:500 14px "IBM Plex Sans KR";cursor:pointer}
+.ed:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+.editing{border-color:var(--green);border-width:2px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--sub)}
+.fld input,.fld textarea,.fld select{font:16px/1.5 "IBM Plex Sans KR",sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.fld textarea{resize:vertical}
+#cancelEdit{margin-left:auto}
 .empty{padding:48px 20px;text-align:center;color:var(--sub);border:1px dashed var(--line);border-radius:14px}
 .note{font-size:13px;color:var(--sub);margin:0}
 .notice{border-top:1px solid var(--line)}
@@ -113,7 +121,8 @@ const LV={high:"주의",mid:"확인",low:"참고"};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeUrl=u=>/^https?:\/\//i.test(String(u||""))?String(u):"";
-let docs=[],idx=0,dept="all",editor=false,ready=false,db=null,busy=false;
+let docs=[],idx=0,dept="all",editor=false,ready=false,db=null,busy=false,editing=null,draft={};
+const FIELDS=[["title","제목","input"],["summary","요약","textarea"],["check","법무 체크","textarea"],["source","출처","input"],["url","원문 링크","input"],["published","게시일","input"]];
 
 function fmt(d){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d||"");if(!m)return String(d||"");const w="일월화수목금토"[new Date(+m[1],m[2]-1,+m[3]).getDay()];return `${+m[2]}.${+m[3]} (${w})`}
 function cur(){return docs[idx]}
@@ -135,13 +144,20 @@ function render(){
   if(!ready){$("grid").innerHTML="";return}
   if(!d){$("grid").innerHTML=`<div class="empty">아직 등록된 브리핑이 없습니다. 첫 브리핑은 평일 아침에 자동으로 올라옵니다.</div>`;return}
   if(!list.length){$("grid").innerHTML=`<div class="empty">${!editor&&all.length?"오늘 브리핑은 법무팀 검수 중입니다. 검수가 끝나면 여기에 표시됩니다.":"이 부문에는 오늘 등록된 이슈가 없습니다."}</div>`;return}
-  $("grid").innerHTML=list.map(i=>{const u=safeUrl(i.url);const on=i.status==="approved";return `<article class="card">
+  $("grid").innerHTML=list.map(i=>{const u=safeUrl(i.url);const on=i.status==="approved";
+    if(editor&&editing===i.id){const v=k=>esc(draft[k]??i[k]??"");return `<article class="card editing">
+    <div class="meta"><span class="chip">${esc(DN[i.dept]||i.dept)}</span><span>수정 중</span></div>
+    ${FIELDS.map(([k,l,t])=>`<label class="fld"><span>${l}</span>${t==="textarea"?`<textarea data-f="${k}" rows="${k==="summary"?4:3}">${v(k)}</textarea>`:`<input data-f="${k}" value="${v(k)}">`}</label>`).join("")}
+    <label class="fld"><span>등급</span><select data-f="level">${Object.entries(LV).map(([k,l])=>`<option value="${k}" ${(draft.level??i.level)===k?"selected":""}>${l}</option>`).join("")}</select></label>
+    <div class="foot"><button class="ok" id="cancelEdit">취소</button><button class="ok on" id="saveEdit">저장</button></div>
+  </article>`}
+    return `<article class="card">
     <div class="meta"><span class="chip">${esc(DN[i.dept]||i.dept)}</span><span class="lv ${esc(i.level)}">${esc(LV[i.level]||"")}</span>${i.published?`<span>${esc(i.published)}</span>`:""}<span class="st ${on?"approved":"pending"}">${on?"검수 완료":"검수 대기"}</span></div>
     <h3>${esc(i.title)}</h3>
     <p>${esc(i.summary)}</p>
     ${i.check?`<div class="chk"><b>법무 체크</b>${esc(i.check)}</div>`:""}
     <div class="foot">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.source||"원문 보기")} ↗</a>`:`<span>${esc(i.source||"")}</span>`}
-    ${editor?`<button class="ok ${on?"on":""}" data-id="${esc(i.id)}">${on?"검수 취소":"검수 완료"}</button>`:""}</div>
+    ${editor?`<span class="btns"><button class="ed" data-id="${esc(i.id)}">수정</button><button class="ok ${on?"on":""}" data-id="${esc(i.id)}">${on?"검수 취소":"검수 완료"}</button></span>`:""}</div>
   </article>`}).join("");
 }
 
@@ -158,10 +174,16 @@ document.addEventListener("click",e=>{
   if(t.id==="prev"&&idx<docs.length-1){idx++;render();return}
   if(t.id==="next"&&idx>0){idx--;render();return}
   const d=cur();if(!d||!Array.isArray(d.items))return;
+  if(t.classList.contains("ed")){editing=t.dataset.id;draft={};render();return}
+  if(t.id==="cancelEdit"){editing=null;draft={};render();return}
+  if(t.id==="saveEdit"){const id=editing;const ch={...draft};if(ch.url&&!/^https?:\/\//i.test(ch.url)){$("msg").textContent="원문 링크는 http:// 또는 https://로 시작해야 합니다.";return}
+    editing=null;draft={};save(d.items.map(i=>i.id===id?{...i,...ch}:{...i}));return}
   if(t.id==="approveAll"){save(d.items.map(i=>({...i,status:"approved"})));return}
   if(t.classList.contains("ok")){const id=t.dataset.id;save(d.items.map(i=>i.id===id?{...i,status:i.status==="approved"?"pending":"approved"}:{...i}));}
 });
 
+document.addEventListener("input",e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&editing)draft[f]=e.target.value});
+document.addEventListener("change",e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&editing)draft[f]=e.target.value});
 const use=async n=>{for(let t=0;t<50&&!(window.claude&&window.claude.use);t++)await new Promise(r=>setTimeout(r,100));try{return window.claude&&window.claude.use?await window.claude.use(n):null}catch(e){return null}};
 render();
 (async()=>{
