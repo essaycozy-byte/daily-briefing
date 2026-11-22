@@ -19,8 +19,9 @@
 
 [2. 10대 로펌 뉴스레터 — 매일 빠짐없이]
 로펌마다 따로 확인하세요. 목록 주소가 있는 곳은 먼저 열고, 없거나 비어 보이면 검색으로 대신하며, 그래도 안 되면 '확인 불가'로 기록하세요.
-- 김앤장(kimchang.com), 태평양(bkl.co.kr), 광장(leeko.com), 율촌(yulchon.com), 지평(jipyong.com), 대륙아주(draju.com), 바른(barunlaw.com), 동인(donginlaw.co.kr)
+- 김앤장(kimchang.com), 태평양(bkl.co.kr), 광장(leeko.com), 율촌(yulchon.com), 대륙아주(draju.com), 바른(barunlaw.com), 동인(donginlaw.co.kr)
 - 세종(shinkim.com): 목록 https://www.shinkim.com/kor/media/newsletter (분야·제목·게시일이 바로 보임)
+- 지평(jipyong.com): 목록 https://www.jipyong.com/kr/board/newsletters_list.php (게시 연월만 보이므로 seq 번호로 새 글 판단)
 - 화우(hwawoo.com): 목록 페이지는 자동 조회 시 비어 보이므로, 검색 후 글 번호 주소 https://www.hwawoo.com/kor/insights/newsletter/번호 를 직전 확인 번호(coverage의 lastId)부터 차례로 확인
 출처 표기는 그 글이 실제로 올라온 사이트의 로펌명으로 하세요(도메인과 로펌명이 맞는지 확인).
 
