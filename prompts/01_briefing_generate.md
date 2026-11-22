@@ -18,8 +18,10 @@
 - 법제처 국민참여입법센터(입법예고·행정예고), 국가법령정보센터(새로 시행·개정된 법령과 행정규칙), 대한민국 정책브리핑(korea.kr)
 
 [2. 10대 로펌 뉴스레터 — 매일 빠짐없이]
-로펌마다 따로 검색하고 필요하면 소식지 목록을 여세요. 확인 못 하면 '확인 불가'로 기록하세요.
-김앤장 법률사무소(kimchang.com), 법무법인 태평양(bkl.co.kr), 세종(shinkim.com), 광장(leeko.com), 율촌(yulchon.com), 화우(yoonyang.com), 지평(jipyong.com), 대륙아주(draju.com), 바른(barunlaw.com), 동인(donginlaw.co.kr)
+로펌마다 따로 확인하세요. 목록 주소가 있는 곳은 먼저 열고, 없거나 비어 보이면 검색으로 대신하며, 그래도 안 되면 '확인 불가'로 기록하세요.
+- 김앤장(kimchang.com), 태평양(bkl.co.kr), 광장(leeko.com), 율촌(yulchon.com), 지평(jipyong.com), 대륙아주(draju.com), 바른(barunlaw.com), 동인(donginlaw.co.kr)
+- 세종(shinkim.com): 목록 https://www.shinkim.com/kor/media/newsletter (분야·제목·게시일이 바로 보임)
+- 화우(hwawoo.com): 목록 페이지는 자동 조회 시 비어 보이므로, 검색 후 글 번호 주소 https://www.hwawoo.com/kor/insights/newsletter/번호 를 직전 확인 번호(coverage의 lastId)부터 차례로 확인
 출처 표기는 그 글이 실제로 올라온 사이트의 로펌명으로 하세요(도메인과 로펌명이 맞는지 확인).
 
 [3. 건설 전문지 — 매일 빠짐없이, 작은 매체도 포함]
