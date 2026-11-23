@@ -65,6 +65,8 @@ h1{font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0;text-wrap:balance;fo
 .mv:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
 .rbtn{display:flex;flex-direction:column;gap:8px;align-items:stretch}
 .moved{font-size:12px;color:var(--deep);font-weight:700}
+.aibar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:-4px}
+.aibar .note{margin:0}
 .editing{border-color:var(--green);border-width:2px}
 .fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--sub)}
 .fld input,.fld textarea,.fld select{font:16px/1.5 "IBM Plex Sans KR",sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
@@ -151,7 +153,7 @@ const LV={high:"주의",mid:"확인",low:"참고"};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeUrl=u=>/^https?:\/\//i.test(String(u||""))?String(u):"";
-let docs=[],idx=0,dept="all",editor=false,ready=false,db=null,busy=false,editing=null,draft={};
+let docs=[],idx=0,dept="all",editor=false,ready=false,db=null,busy=false,editing=null,draft={},ai=null,aiBusy=false;
 const FIELDS=[["title","제목","input"],["summary","요약","textarea"],["check","법무 체크","textarea"],["source","출처","input"],["url","원문 링크","input"],["published","게시일","input"],["deadline","기한(YYYY-MM-DD, 없으면 비움)","input"],["deadlineLabel","기한 종류(시행일·의견마감 등)","input"]];
 
 const KST=()=>new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Seoul"});
@@ -190,7 +192,7 @@ function render(){
   $("grid").innerHTML=list.map(i=>{const u=safeUrl(i.url);const on=i.status==="approved";
     if(editor&&editing===i.id){const v=k=>esc(draft[k]??i[k]??"");return `<article class="card editing">
     <div class="meta"><span class="chip">${esc(DN[i.dept]||i.dept)}</span><span>수정 중</span></div>
-    ${FIELDS.map(([k,l,t])=>`<label class="fld"><span>${l}</span>${t==="textarea"?`<textarea data-f="${k}" rows="${k==="summary"?4:3}">${v(k)}</textarea>`:`<input data-f="${k}" value="${v(k)}">`}</label>`).join("")}
+    ${FIELDS.map(([k,l,t])=>`<label class="fld"><span>${l}</span>${t==="textarea"?`<textarea data-f="${k}" rows="${k==="summary"?4:3}">${v(k)}</textarea>`:`<input data-f="${k}" value="${v(k)}">`}</label>`+(k==="check"&&ai?`<div class="aibar"><button class="ed" id="aiCheck" ${aiBusy?"disabled":""}>${aiBusy?"법무 체크 작성 중…":"AI로 법무 체크 쓰기"}</button><span class="note">제목·요약·출처를 바탕으로 초안을 씁니다. 저장 전에 확인해 주세요.</span></div>`:"")).join("")}
     <label class="fld"><span>부문(다른 부서로 옮기기)</span><select data-f="dept">${DKEYS.map(k=>`<option value="${k}" ${(draft.dept??i.dept)===k?"selected":""}>${DN[k]}</option>`).join("")}</select></label>
     <label class="fld"><span>등급</span><select data-f="level">${Object.entries(LV).map(([k,l])=>`<option value="${k}" ${(draft.level??i.level)===k?"selected":""}>${l}</option>`).join("")}</select></label>
     <div class="foot"><button class="ok" id="cancelEdit">취소</button><button class="ok on" id="saveEdit">저장</button></div>
@@ -228,6 +230,25 @@ function renderExtra(d,watch,excl){
     ${ex.length?`<div class="rows">${ex.map(x=>row(x,false)).join("")}</div>`:`<div class="empty">기록이 없습니다.</div>`}</details></section>`;
 }
 
+async function draftCheck(id,fb){
+  const d=cur();if(!ai||aiBusy||!d)return;const i=arr(d.items).find(x=>x.id===id)||fb;if(!i)return;
+  const g=k=>String(draft[k]??i[k]??"");
+  const prompt=`당신은 건설사(시행·시공을 함께 하는 중견 주택건설사) 법무팀의 검토 담당자입니다. 아래 이슈 카드의 '법무 체크' 문구를 써 주세요.
+규칙: 회사가 무엇을 점검·조치해야 하는지 1~2문장, 한국어 존댓말 평서문. "점검하세요", "검토가 필요합니다" 수준으로 쓰고 법률 자문처럼 단정하지 마세요. 아래 자료에 없는 사실·수치·조문은 만들지 마세요. 특정 사내 프로젝트명은 쓰지 마세요. 따옴표나 머리말 없이 문구만 답하세요.
+부문: ${DN[g("dept")]||g("dept")}
+제목: ${g("title")}
+요약: ${g("summary")}
+출처: ${g("source")} (${g("published")})
+${g("deadline")?`기한: ${g("deadlineLabel")} ${g("deadline")}`:""}`;
+  aiBusy=true;render();$("msg").textContent="법무 체크 초안을 쓰는 중입니다…";
+  const box=()=>document.querySelector('textarea[data-f="check"]');
+  try{const r=await ai(prompt,{modelTier:"default",onText:({text})=>{const t=box();if(t&&editing===id){t.value=text;draft.check=text}}});
+    const out=String(r&&r.text||"").trim().replace(/^["'“”]+|["'“”]+$/g,"");
+    if(editing===id){draft.check=out}$("msg").textContent=out?"법무 체크 초안을 넣었습니다. 확인 후 저장을 눌러 주세요.":"초안을 만들지 못했습니다. 직접 입력해 주세요."}
+  catch(e){$("msg").textContent=e&&e.code==="rate_limited"?"요청이 많아 잠시 후 다시 눌러 주세요.":e&&e.code==="not_granted"?"AI 작성 권한이 허용되지 않았습니다. 직접 입력해 주세요.":"초안을 만들지 못했습니다. 직접 입력해 주세요."}
+  finally{aiBusy=false;render()}
+}
+
 async function save(patch){
   const d=cur();if(!db||!d||busy)return;busy=true;$("msg").textContent="";
   if(Array.isArray(patch))patch={items:patch};
@@ -242,15 +263,16 @@ document.addEventListener("click",e=>{
   if(t.id==="prev"&&idx<docs.length-1){idx++;render();return}
   if(t.id==="next"&&idx>0){idx--;render();return}
   const d=cur();if(!d||!Array.isArray(d.items))return;
+  if(t.id==="aiCheck"){if(editing)draftCheck(editing);return}
   if(t.classList.contains("up")){const w=arr(d.watch).find(x=>x.id===t.dataset.wid);if(!w)return;
     const pre={safety:"s",marketing:"m",construction:"c",business:"b",finance:"f",admin:"a"}[w.dept]||"x";
     let n=1;while(d.items.some(i=>i.id===pre+n))n++;const id=pre+n;
-    const it={id,dept:w.dept,level:"low",status:"pending",title:w.title,summary:w.note||"",check:"",source:w.source||"",url:w.url||"",published:w.published||"",promotedFrom:w.id,botReason:w.reason||""};
+    const it={id,dept:w.dept,level:w.level||"low",status:"pending",title:w.title,summary:w.summary||w.note||"",check:w.check||"",source:w.source||"",url:w.url||"",published:w.published||"",promotedFrom:w.id,botReason:w.reason||""};
     if(w.deadline){it.deadline=w.deadline;it.deadlineLabel=w.deadlineLabel||""}if(w.team)it.team=w.team;
-    save({items:[...d.items.map(i=>({...i})),it],watch:arr(d.watch).filter(x=>x.id!==w.id)}).then(ok=>{if(ok){editing=id;draft={};render()}});return}
+    save({items:[...d.items.map(i=>({...i})),it],watch:arr(d.watch).filter(x=>x.id!==w.id)}).then(ok=>{if(ok){editing=id;draft={};render();if(!it.check&&ai)draftCheck(id,it)}});return}
   if(t.classList.contains("down")){const i=d.items.find(x=>x.id===t.dataset.id);if(!i)return;
     let k=1;while(arr(d.watch).some(x=>x.id==="w"+k))k++;
-    const w={id:"w"+k,dept:i.dept,title:i.title,note:i.summary||"",reason:"법무팀이 검수 중 핵심 카드에서 내림",source:i.source||"",url:i.url||"",published:i.published||""};
+    const w={id:"w"+k,dept:i.dept,title:i.title,note:i.summary||"",summary:i.summary||"",check:i.check||"",level:i.level||"low",reason:"법무팀이 검수 중 핵심 카드에서 내림",source:i.source||"",url:i.url||"",published:i.published||""};
     if(i.deadline){w.deadline=i.deadline;w.deadlineLabel=i.deadlineLabel||""}if(i.team)w.team=i.team;
     save({items:d.items.filter(x=>x.id!==i.id).map(x=>({...x})),watch:[...arr(d.watch).map(x=>({...x})),w]});return}
   if(t.classList.contains("ed")){editing=t.dataset.id;draft={};render();return}
@@ -279,6 +301,7 @@ render();
   const user=await use("user");
   try{editor=!!(user&&(await user.canEdit()||await user.isOwner()))}catch(e){editor=false}
   db=await use("db");
+  if(editor)use("sample").then(x=>{if(x){ai=x;render()}});
   if(!db){ready=true;$("who").textContent="이 화면에서는 브리핑 데이터를 불러올 수 없습니다. claude.ai에 로그인한 상태로 열어 주세요.";render();return}
   $("who").textContent=editor?"법무팀 검수 모드 · 카드마다 검수 완료를 누르면 전 직원 화면에 게시됩니다. 아래 추가 확인 목록·제외 기록·다가오는 기한은 법무팀에게만 보입니다.":"법무팀 검수를 마친 이슈만 표시됩니다.";
   const timer=setTimeout(()=>{$("msg").textContent="데이터 연결이 지연되고 있습니다. 표시된 내용이 최신이 아닐 수 있습니다."},10000);

@@ -87,7 +87,7 @@
 - items 항목마다: id(부문 머리글자+번호: s1.. / m1.. / c1.. / b1.. / f1.. / a1..), dept(safety|marketing|construction|business|finance|admin), level(high=즉시 조치·점검 필요, mid=확인 필요, low=참고), status는 반드시 "pending", title(한 줄, 60자 이내), summary(2~3문장, 사실만), check(법무 체크: 시행·시공을 하는 중견 건설사 입장에서 무엇을 점검·조치해야 하는지 1~2문장. 특정 사내 프로젝트명은 쓰지 말 것), source(출처 기관·매체명, 로펌 글은 "법무법인 ○○ 뉴스레터"), url(원문 주소, https), published(원문 게시일 YYYY-MM-DD, 모르면 YYYY-MM).
 - 기한이 있으면 반드시 deadline(YYYY-MM-DD)과 deadlineLabel(예: "시행", "의견마감", "유예종료", "신고기한", "단속 시작")을 넣으세요. 의견 마감과 시행일이 둘 다 있으면 오늘 이후 가장 먼저 오는 날짜를 deadline으로 하고 다른 날짜는 summary에 적으세요.
 - team(관련 팀, 화면에는 안 보임): 안전팀, 마케팅, 공무·현장, 공공사업팀, 민간사업팀, 재무팀, 인사팀, 법무팀, 기획팀 중 해당하는 것을 쉼표로.
-- watch 항목마다: id(w1, w2 …), dept, title, note(무엇인지 1~2문장), reason(왜 뺐는지), source, url, published, 필요하면 deadline·deadlineLabel·team.
+- watch 항목마다: id(w1, w2 …), dept, level, title, note(무엇인지 1~2문장), summary(카드로 올릴 때 쓸 요약 2~3문장, 사실만), check(카드로 올릴 때 쓸 법무 체크 1~2문장, items와 같은 기준), reason(왜 뺐는지), source, url, published, 필요하면 deadline·deadlineLabel·team. 법무팀이 카드로 올리면 summary와 check가 그대로 카드에 들어가니 items와 같은 품질로 쓰세요.
 - excluded 항목마다: dept(가장 가까운 부문), title, reason, source, url, published.
 - 법률 자문처럼 단정하지 말고 "점검하세요", "검토가 필요합니다" 수준으로 쓰세요.
 
