@@ -61,6 +61,10 @@ h1{font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0;text-wrap:balance;fo
 .btns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}.btns .ok{margin-left:0}
 .ed{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--sub);font:500 14px "IBM Plex Sans KR";cursor:pointer}
 .ed:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+.mv{min-height:40px;padding:0 12px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--sub);font:500 14px "IBM Plex Sans KR";cursor:pointer;max-width:9em}
+.mv:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+.rbtn{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.moved{font-size:12px;color:var(--deep);font-weight:700}
 .editing{border-color:var(--green);border-width:2px}
 .fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--sub)}
 .fld input,.fld textarea,.fld select{font:16px/1.5 "IBM Plex Sans KR",sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
@@ -154,6 +158,12 @@ const KST=()=>new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Seoul"});
 function dday(d){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d||"");if(!m)return null;const t=KST().split("-").map(Number);return Math.round((Date.UTC(+m[1],m[2]-1,+m[3])-Date.UTC(t[0],t[1]-1,t[2]))/864e5)}
 function ddChip(i){const n=dday(i.deadline);if(n===null)return"";const lab=esc(i.deadlineLabel||"기한");const txt=n>0?`D-${n}`:n===0?"D-day":`D+${-n}`;return `<span class="dd ${n>14?"far":""}" title="${esc(i.deadline)}">${lab} ${txt}</span>`}
 function arr(x){return Array.isArray(x)?x:[]}
+const PRE={safety:"s",marketing:"m",construction:"c",business:"b",finance:"f",admin:"a"};
+const DKEYS=DEPTS.slice(1).map(x=>x[0]);
+function mvSel(cls,attr,id,curDept){return `<select class="mv ${cls}" ${attr}="${esc(id)}" aria-label="다른 부서로 옮기기"><option value="">부서 이동</option>${DKEYS.filter(k=>k!==curDept).map(k=>`<option value="${k}">${DN[k]}(으)로</option>`).join("")}</select>`}
+function moveItem(items,id,nd){const src=items.find(i=>i.id===id);if(!src||!DN[nd]||src.dept===nd)return null;
+  const pre=PRE[nd]||"x";let n=1;while(items.some(i=>i.id===pre+n))n++;const nid=pre+n;
+  return {nid,items:items.map(i=>i.id===id?{...i,id:nid,dept:nd,movedFrom:i.movedFrom||i.dept}:{...i})}}
 function fmt(d){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d||"");if(!m)return String(d||"");const w="일월화수목금토"[new Date(+m[1],m[2]-1,+m[3]).getDay()];return `${+m[2]}.${+m[3]} (${w})`}
 function cur(){return docs[idx]}
 function visible(items){return editor?items:items.filter(i=>i.status==="approved")}
@@ -181,16 +191,17 @@ function render(){
     if(editor&&editing===i.id){const v=k=>esc(draft[k]??i[k]??"");return `<article class="card editing">
     <div class="meta"><span class="chip">${esc(DN[i.dept]||i.dept)}</span><span>수정 중</span></div>
     ${FIELDS.map(([k,l,t])=>`<label class="fld"><span>${l}</span>${t==="textarea"?`<textarea data-f="${k}" rows="${k==="summary"?4:3}">${v(k)}</textarea>`:`<input data-f="${k}" value="${v(k)}">`}</label>`).join("")}
+    <label class="fld"><span>부문(다른 부서로 옮기기)</span><select data-f="dept">${DKEYS.map(k=>`<option value="${k}" ${(draft.dept??i.dept)===k?"selected":""}>${DN[k]}</option>`).join("")}</select></label>
     <label class="fld"><span>등급</span><select data-f="level">${Object.entries(LV).map(([k,l])=>`<option value="${k}" ${(draft.level??i.level)===k?"selected":""}>${l}</option>`).join("")}</select></label>
     <div class="foot"><button class="ok" id="cancelEdit">취소</button><button class="ok on" id="saveEdit">저장</button></div>
   </article>`}
     return `<article class="card">
-    <div class="meta"><span class="chip">${esc(DN[i.dept]||i.dept)}</span><span class="lv ${esc(i.level)}">${esc(LV[i.level]||"")}</span>${i.published?`<span>${esc(i.published)}</span>`:""}${ddChip(i)}<span class="st ${on?"approved":"pending"}">${on?"검수 완료":"검수 대기"}</span></div>
+    <div class="meta"><span class="chip">${esc(DN[i.dept]||i.dept)}</span><span class="lv ${esc(i.level)}">${esc(LV[i.level]||"")}</span>${i.published?`<span>${esc(i.published)}</span>`:""}${ddChip(i)}${editor&&i.movedFrom?`<span class="moved">${esc(DN[i.movedFrom]||i.movedFrom)}에서 옮김</span>`:""}<span class="st ${on?"approved":"pending"}">${on?"검수 완료":"검수 대기"}</span></div>
     <h3>${esc(i.title)}</h3>
     <p>${esc(i.summary)}</p>
     ${i.check?`<div class="chk"><b>법무 체크</b>${esc(i.check)}</div>`:""}
     <div class="foot">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.source||"원문 보기")} ↗</a>`:`<span>${esc(i.source||"")}</span>`}
-    ${editor?`<span class="btns"><button class="ed down" data-id="${esc(i.id)}">목록으로 내리기</button><button class="ed" data-id="${esc(i.id)}">수정</button><button class="ok ${on?"on":""}" data-id="${esc(i.id)}">${on?"검수 취소":"검수 완료"}</button></span>`:""}</div>
+    ${editor?`<span class="btns">${mvSel("mvi","data-id",i.id,i.dept)}<button class="ed down" data-id="${esc(i.id)}">목록으로 내리기</button><button class="ed" data-id="${esc(i.id)}">수정</button><button class="ok ${on?"on":""}" data-id="${esc(i.id)}">${on?"검수 취소":"검수 완료"}</button></span>`:""}</div>
   </article>`}).join("");
 }
 
@@ -208,7 +219,7 @@ function renderExtra(d,watch,excl){
     ${x.note?`<div class="n">${esc(x.note)}</div>`:""}
     ${x.reason?`<div class="why"><b>${btn?"아래로 뺀 이유":"제외한 이유"}</b> · ${esc(x.reason)}</div>`:""}
     <div class="sm">${esc(x.source||"")}${x.published?` · ${esc(x.published)}`:""} ${ddChip(x)}</div></div>
-    ${btn?`<button class="ok up" data-wid="${esc(x.id)}">카드로 올리기</button>`:"<span></span>"}</div>`};
+    ${btn?`<div class="rbtn"><button class="ok up" data-wid="${esc(x.id)}">카드로 올리기</button>${mvSel("mvw","data-wid",x.id,x.dept)}</div>`:"<span></span>"}</div>`};
   $("extra").innerHTML=`<section class="sec" aria-label="추가 확인 목록"><h2>추가 확인 목록 <span class="note" style="display:inline">${w.length}건 · 법무팀만 보임</span></h2>
     <p class="note">봇이 찾았지만 중요도가 낮다고 보고 핵심 카드에서 뺀 이슈입니다. 빼는 판단이 맞는지 확인하고, 필요하면 카드로 올리세요. 올린 카드는 검수 대기로 들어갑니다.</p>
     ${w.length?`<div class="rows">${w.map(x=>row(x,true)).join("")}</div>`:`<div class="empty">이 부문에는 추가 확인 목록이 없습니다.</div>`}</section>
@@ -220,8 +231,8 @@ function renderExtra(d,watch,excl){
 async function save(patch){
   const d=cur();if(!db||!d||busy)return;busy=true;$("msg").textContent="";
   if(Array.isArray(patch))patch={items:patch};
-  try{await db.doc("briefings/"+d.id).update({...patch,reviewedAt:new Date().toISOString()})}
-  catch(e){$("msg").textContent=e&&e.code==="invalid_argument"?"검수 권한이 없습니다. 법무팀(편집 권한)만 검수할 수 있습니다.":"저장하지 못했습니다. 잠시 후 다시 눌러 주세요."}
+  try{await db.doc("briefings/"+d.id).update({...patch,reviewedAt:new Date().toISOString()});return true}
+  catch(e){$("msg").textContent=e&&e.code==="invalid_argument"?"검수 권한이 없습니다. 법무팀(편집 권한)만 검수할 수 있습니다.":"저장하지 못했습니다. 잠시 후 다시 눌러 주세요.";return false}
   finally{busy=false}
 }
 
@@ -236,7 +247,7 @@ document.addEventListener("click",e=>{
     let n=1;while(d.items.some(i=>i.id===pre+n))n++;const id=pre+n;
     const it={id,dept:w.dept,level:"low",status:"pending",title:w.title,summary:w.note||"",check:"",source:w.source||"",url:w.url||"",published:w.published||"",promotedFrom:w.id,botReason:w.reason||""};
     if(w.deadline){it.deadline=w.deadline;it.deadlineLabel=w.deadlineLabel||""}if(w.team)it.team=w.team;
-    save({items:[...d.items.map(i=>({...i})),it],watch:arr(d.watch).filter(x=>x.id!==w.id)}).then(()=>{editing=id;draft={};render()});return}
+    save({items:[...d.items.map(i=>({...i})),it],watch:arr(d.watch).filter(x=>x.id!==w.id)}).then(ok=>{if(ok){editing=id;draft={};render()}});return}
   if(t.classList.contains("down")){const i=d.items.find(x=>x.id===t.dataset.id);if(!i)return;
     let k=1;while(arr(d.watch).some(x=>x.id==="w"+k))k++;
     const w={id:"w"+k,dept:i.dept,title:i.title,note:i.summary||"",reason:"법무팀이 검수 중 핵심 카드에서 내림",source:i.source||"",url:i.url||"",published:i.published||""};
@@ -246,13 +257,22 @@ document.addEventListener("click",e=>{
   if(t.id==="cancelEdit"){editing=null;draft={};render();return}
   if(t.id==="saveEdit"){const id=editing;const ch={...draft};if(ch.url&&!/^https?:\/\//i.test(ch.url)){$("msg").textContent="원문 링크는 http:// 또는 https://로 시작해야 합니다.";return}
     if(ch.deadline&&!/^\d{4}-\d{2}-\d{2}$/.test(ch.deadline.trim())){$("msg").textContent="기한은 2026-12-31처럼 연-월-일로 적어 주세요.";return}if(ch.deadline!==undefined)ch.deadline=ch.deadline.trim();
-    editing=null;draft={};save(d.items.map(i=>i.id===id?{...i,...ch}:{...i}));return}
+    const nd=ch.dept;delete ch.dept;let items=d.items.map(i=>i.id===id?{...i,...ch}:{...i});
+    if(nd){const r=moveItem(items,id,nd);if(r)items=r.items}
+    editing=null;draft={};save(items);return}
   if(t.id==="approveAll"){save(d.items.map(i=>({...i,status:"approved"})));return}
   if(t.classList.contains("ok")){const id=t.dataset.id;save(d.items.map(i=>i.id===id?{...i,status:i.status==="approved"?"pending":"approved"}:{...i}));}
 });
 
 document.addEventListener("input",e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&editing)draft[f]=e.target.value});
-document.addEventListener("change",e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&editing)draft[f]=e.target.value});
+document.addEventListener("change",e=>{const t=e.target;
+  if(t.classList&&t.classList.contains("mv")){const nd=t.value;const d=cur();if(!nd||!d||!editor)return;
+    if(t.classList.contains("mvi")){const r=moveItem(arr(d.items),t.dataset.id,nd);if(!r)return;
+      const n=r.items.filter(i=>i.dept===nd).length;
+      save({items:r.items}).then(ok=>{if(ok)$("msg").textContent=`${DN[nd]} 부문으로 옮겼습니다.`+(n>5?` 이제 ${DN[nd]} 핵심 카드가 ${n}건입니다. 필요하면 하나를 목록으로 내려 주세요.`:"")})}
+    else if(t.classList.contains("mvw")){save({watch:arr(d.watch).map(x=>x.id===t.dataset.wid?{...x,dept:nd,movedFrom:x.movedFrom||x.dept}:{...x})}).then(ok=>{if(ok)$("msg").textContent=`추가 확인 목록 항목을 ${DN[nd]} 부문으로 옮겼습니다.`})}
+    return}
+  const f=t.dataset&&t.dataset.f;if(f&&editing)draft[f]=t.value});
 const use=async n=>{for(let t=0;t<50&&!(window.claude&&window.claude.use);t++)await new Promise(r=>setTimeout(r,100));try{return window.claude&&window.claude.use?await window.claude.use(n):null}catch(e){return null}};
 render();
 (async()=>{
