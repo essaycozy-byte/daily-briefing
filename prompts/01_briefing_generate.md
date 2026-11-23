@@ -24,6 +24,11 @@
 - 한국토지신탁: 홈페이지 자동 조회 불가 → 뉴스 검색·DART 공시로 확인
 - 신한자산신탁: 뉴스 검색으로 확인, 금융감독원 제재공시도 확인
 
+[1-3. 대법원 — 매일 빠짐없이]
+- 주요판결 https://www.scourt.go.kr/supreme/news/NewsListAction2.work?gubun=4 (전원합의체·중요판결·중요결정 요지는 안의 사건을 하나씩 보고 6개 부문 해당 사건을 선별)
+- 보도자료 https://www.scourt.go.kr/portal/news/NewsListAction.work?gubun=702 (중대재해·노동 사건, 전원합의체 공개변론)
+- 정치·일반 형사 등 회사 업무와 무관한 사건 제외, 출처는 대법원 원문, 확인한 seqnum은 lastSeq로 기록
+
 [2. 주요 로펌 뉴스레터(9곳, 동인 제외) — 매일 빠짐없이]
 로펌마다 따로 확인하세요. 목록 주소가 있는 곳은 먼저 열고, 없거나 비어 보이면 검색으로 대신하며, 그래도 안 되면 '확인 불가'로 기록하세요.
 - 김앤장(kimchang.com), 태평양(bkl.co.kr), 광장(leeko.com), 율촌(yulchon.com), 대륙아주(draju.com), 바른(barunlaw.com)
@@ -32,11 +37,11 @@
 - 화우(hwawoo.com): 목록 페이지는 자동 조회 시 비어 보이므로, 검색 후 글 번호 주소 https://www.hwawoo.com/kor/insights/newsletter/번호 를 직전 확인 번호(coverage의 lastId)부터 차례로 확인
 출처 표기는 그 글이 실제로 올라온 사이트의 로펌명으로 하세요(도메인과 로펌명이 맞는지 확인).
 
-[3. 건설 전문지 — 매일 빠짐없이, 작은 매체도 포함]
-대한경제(dnews.co.kr), 대한전문건설신문(koscaj.com), 국토일보(ikld.kr), 건설타임즈(constimes.co.kr), 한국건설신문(conslove.co.kr), 하우징헤럴드(housingherald.co.kr), 한국주택경제신문(arunews.com), 안전신문(safetynews.co.kr) 등. 검색 중 발견한 건설·부동산 전문 매체도 사실 확인이 되면 출처로 사용.
+[3. 건설·법률 전문지 — 매일 빠짐없이, 작은 매체도 포함]
+대한경제(dnews.co.kr), 대한전문건설신문(koscaj.com), 국토일보(ikld.kr), 건설타임즈(constimes.co.kr), 한국건설신문(conslove.co.kr), 하우징헤럴드(housingherald.co.kr), 한국주택경제신문(arunews.com), 안전신문(safetynews.co.kr), 법률신문(lawtimes.co.kr) 등. 검색 중 발견한 건설·부동산 전문 매체도 사실 확인이 되면 출처로 사용.
 
 [4. 일간지·경제지·통신사 — 부문별 키워드 검색]
-통신사·주요 일간지·경제지를 부문별 키워드로 검색.
+통신사(연합·뉴시스·뉴스1), 종합일간지 10곳, 경제지 9곳을 부문별 키워드(부문마다 3개 이상)로 검색.
 
 [부문] 모든 후보를 가장 가까운 한 부문에만 넣으세요.
 - safety(안전) / marketing(마케팅: 분양에 관한 것은 모두 여기) / construction(공사·현장) / business(사업: 공공수주·민간수주·지역주택조합·사업 PF 구조, 분양 관련은 marketing으로) / finance(재무) / admin(경영지원: 인사·법무·기획)
