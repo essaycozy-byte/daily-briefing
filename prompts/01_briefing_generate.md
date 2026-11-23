@@ -51,14 +51,17 @@
 [부문] 모든 후보를 가장 가까운 한 부문에만 넣으세요.
 - safety(안전) / marketing(마케팅: 분양에 관한 것은 모두 여기) / construction(공사·현장) / business(사업: 공공수주·민간수주·지역주택조합·사업 PF 구조, 분양 관련은 marketing으로) / finance(재무) / admin(경영지원: 인사·법무·기획)
 
-[선정] 부문마다 최대 5건. 즉시 조치가 필요한 것(high)을 먼저 넣고, 같은 사안은 하나로 합쳐 원문에 가장 가까운 출처(정부 원문 > 로펌 해설 > 전문지 > 일간지)를 쓰세요. 블로그·카페·커뮤니티·홍보성 글은 쓰지 마세요. 쓸 만한 이슈가 없으면 억지로 채우지 마세요.
+[선정 — 3단 구조, 소리 없이 버리지 않음]
+(1) items 핵심 카드: 부문별 최대 5건, 검수 후 전 직원 공개
+(2) watch 추가 확인 목록: 개수 제한 없음, 항목마다 reason(왜 핵심에서 뺐는지) 기록, 법무팀만 봄
+(3) excluded 검토 후 제외: 무관·중복·지난 기사·홍보성, 항목마다 reason 한 문장, 법무팀만 봄
 
 [작성 규칙]
 - 한국어 존댓말 평서문, 원문 문장을 베끼지 말고 직접 요약(인용하지 않음). 날짜·수치·법령명·조문은 원문에서 확인한 것만.
-- 항목: id, dept, level(high/mid/low), status("pending"), title(60자 이내), summary(2~3문장), check(법무 체크 1~2문장, 사내 프로젝트명 금지), source, url, published.
+- 항목: id, dept, level(high/mid/low), status("pending"), deadline·deadlineLabel(기한이 있으면), team(관련 팀, 비공개), title(60자 이내), summary(2~3문장), check(법무 체크 1~2문장, 사내 프로젝트명 금지), source, url, published.
 - 법률 자문처럼 단정하지 말고 "점검하세요", "검토가 필요합니다" 수준으로.
 
 [저장 형식]
-{"date":"YYYY-MM-DD","generatedAt":"…","generator":"Claude 예약 작업","coverage":{"government":[…],"lawfirms":[…10곳],"tradeMedia":[…],"newspapers":{…}},"items":[…]}
+{"date":"YYYY-MM-DD","generatedAt":"…","generator":"Claude 예약 작업","coverage":{"government":[…],"lawfirms":[…10곳],"tradeMedia":[…],"newspapers":{…}},"items":[…],"watch":[…],"excluded":[…]}
 
 [마무리] 확인 범위 요약(정부·로펌·전문지별 확인 수와 확인 불가 목록), 부문별 건수, high 등급 이슈 제목을 짧게 보고. 저장 실패 시 이유를 명시.
