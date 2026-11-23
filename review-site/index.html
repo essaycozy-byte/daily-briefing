@@ -70,6 +70,28 @@ h1{font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0;text-wrap:balance;fo
 .note{font-size:13px;color:var(--sub);margin:0}
 .notice{border-top:1px solid var(--line)}
 .notice p{max-width:70ch;margin:0 0 6px;font-size:14px;color:var(--sub)}
+
+.dd{padding:2px 10px;border-radius:12px;background:var(--coral);color:#fff;font-weight:700}
+.dd.far{background:var(--mist);color:var(--deep)}
+.sec{margin-top:34px}
+.sec h2{font-size:20px;margin:0 0 4px}
+.sec .note{margin-bottom:12px}
+.rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:grid;grid-template-columns:auto 1fr auto;gap:6px 14px;padding:14px 16px;border-top:1px solid var(--line);background:var(--card);align-items:start}
+.row:first-child{border-top:0}
+.row .t{font-weight:700;font-size:16px;line-height:1.4}
+.row .t a{color:var(--ink)}
+.row .n{font-size:14.5px;color:var(--ink);margin-top:2px}
+.row .why{font-size:13.5px;color:var(--sub);margin-top:6px}
+.row .why b{color:var(--deep)}
+.row .sm{font-size:13px;color:var(--sub);margin-top:4px}
+.row .ok{margin-left:0;white-space:nowrap}
+.dl{border:2px solid var(--coral);border-radius:14px;padding:16px 18px;margin-bottom:22px;background:var(--card)}
+.dl h2{font-size:17px;margin:0 0 8px;color:var(--coral)}
+.dl ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.dl li{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:15px}
+details.ex summary{cursor:pointer;font-weight:700;font-size:17px;min-height:44px;display:flex;align-items:center}
+@media(max-width:600px){.row{grid-template-columns:1fr}}
 #msg{font-size:14px;color:var(--coral);margin:12px 0 0;min-height:1em}
 @media(max-width:600px){.all{margin-left:0;width:100%}.fig1{padding-right:18px;margin-right:18px}.st{margin-left:0}}
 @media(prefers-reduced-motion:no-preference){.card{animation:up .35s ease both}@keyframes up{from{opacity:0;transform:translateY(6px)}}}
@@ -94,6 +116,7 @@ h1{font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0;text-wrap:balance;fo
       <div class="fig1"><b id="fTotal">0</b><span>오늘 이슈</span></div>
       <div class="fig1"><b id="fHigh">0</b><span>주의 등급</span></div>
       <div class="fig1" id="pendBox"><b id="fPend">0</b><span>검수 대기</span></div>
+      <div class="fig1" id="watchBox"><b id="fWatch">0</b><span>추가 확인 목록</span></div>
     </div>
   </div>
 </header>
@@ -104,7 +127,9 @@ h1{font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0;text-wrap:balance;fo
   <div class="wrap">
     <p class="note" id="who">브리핑을 불러오는 중입니다.</p>
     <p id="msg" role="status"></p>
+    <div id="dlbox"></div>
     <div class="grid" id="grid" style="margin-top:14px"></div>
+    <div id="extra"></div>
   </div>
 </main>
 <footer class="band notice">
@@ -122,8 +147,12 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeUrl=u=>/^https?:\/\//i.test(String(u||""))?String(u):"";
 let docs=[],idx=0,dept="all",editor=false,ready=false,db=null,busy=false,editing=null,draft={};
-const FIELDS=[["title","제목","input"],["summary","요약","textarea"],["check","법무 체크","textarea"],["source","출처","input"],["url","원문 링크","input"],["published","게시일","input"]];
+const FIELDS=[["title","제목","input"],["summary","요약","textarea"],["check","법무 체크","textarea"],["source","출처","input"],["url","원문 링크","input"],["published","게시일","input"],["deadline","기한(YYYY-MM-DD, 없으면 비움)","input"],["deadlineLabel","기한 종류(시행일·의견마감 등)","input"]];
 
+const KST=()=>new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Seoul"});
+function dday(d){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d||"");if(!m)return null;const t=KST().split("-").map(Number);return Math.round((Date.UTC(+m[1],m[2]-1,+m[3])-Date.UTC(t[0],t[1]-1,t[2]))/864e5)}
+function ddChip(i){const n=dday(i.deadline);if(n===null)return"";const lab=esc(i.deadlineLabel||"기한");const txt=n>0?`D-${n}`:n===0?"D-day":`D+${-n}`;return `<span class="dd ${n>14?"far":""}" title="${esc(i.deadline)}">${lab} ${txt}</span>`}
+function arr(x){return Array.isArray(x)?x:[]}
 function fmt(d){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d||"");if(!m)return String(d||"");const w="일월화수목금토"[new Date(+m[1],m[2]-1,+m[3]).getDay()];return `${+m[2]}.${+m[3]} (${w})`}
 function cur(){return docs[idx]}
 function visible(items){return editor?items:items.filter(i=>i.status==="approved")}
@@ -137,11 +166,14 @@ function render(){
   $("fTotal").textContent=items.length;
   $("fHigh").textContent=items.filter(i=>i.level==="high").length;
   $("fPend").textContent=all.filter(i=>i.status!=="approved").length;$("pendBox").hidden=!editor;
+  const watch=editor&&d?arr(d.watch):[];const excl=editor&&d?arr(d.excluded):[];
+  $("fWatch").textContent=watch.length;$("watchBox").hidden=!editor;
+  renderExtra(d,watch,excl);
   const cnt=k=>k==="all"?items.length:items.filter(i=>i.dept===k).length;
   $("tabs").innerHTML=DEPTS.map(([k,n])=>`<button class="tab" data-k="${k}" aria-pressed="${k===dept}">${n}<i>${cnt(k)}</i></button>`).join("")+
     (editor&&all.some(i=>i.status!=="approved")?`<button class="all" id="approveAll">오늘 자 전체 검수 완료</button>`:"");
   const list=dept==="all"?items:items.filter(i=>i.dept===dept);
-  if(!ready){$("grid").innerHTML="";return}
+  if(!ready){$("grid").innerHTML="";$("extra").innerHTML="";$("dlbox").innerHTML="";return}
   if(!d){$("grid").innerHTML=`<div class="empty">아직 등록된 브리핑이 없습니다. 첫 브리핑은 평일 아침에 자동으로 올라옵니다.</div>`;return}
   if(!list.length){$("grid").innerHTML=`<div class="empty">${!editor&&all.length?"오늘 브리핑은 법무팀 검수 중입니다. 검수가 끝나면 여기에 표시됩니다.":"이 부문에는 오늘 등록된 이슈가 없습니다."}</div>`;return}
   $("grid").innerHTML=list.map(i=>{const u=safeUrl(i.url);const on=i.status==="approved";
@@ -152,18 +184,42 @@ function render(){
     <div class="foot"><button class="ok" id="cancelEdit">취소</button><button class="ok on" id="saveEdit">저장</button></div>
   </article>`}
     return `<article class="card">
-    <div class="meta"><span class="chip">${esc(DN[i.dept]||i.dept)}</span><span class="lv ${esc(i.level)}">${esc(LV[i.level]||"")}</span>${i.published?`<span>${esc(i.published)}</span>`:""}<span class="st ${on?"approved":"pending"}">${on?"검수 완료":"검수 대기"}</span></div>
+    <div class="meta"><span class="chip">${esc(DN[i.dept]||i.dept)}</span><span class="lv ${esc(i.level)}">${esc(LV[i.level]||"")}</span>${i.published?`<span>${esc(i.published)}</span>`:""}${ddChip(i)}<span class="st ${on?"approved":"pending"}">${on?"검수 완료":"검수 대기"}</span></div>
     <h3>${esc(i.title)}</h3>
     <p>${esc(i.summary)}</p>
     ${i.check?`<div class="chk"><b>법무 체크</b>${esc(i.check)}</div>`:""}
     <div class="foot">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.source||"원문 보기")} ↗</a>`:`<span>${esc(i.source||"")}</span>`}
-    ${editor?`<span class="btns"><button class="ed" data-id="${esc(i.id)}">수정</button><button class="ok ${on?"on":""}" data-id="${esc(i.id)}">${on?"검수 취소":"검수 완료"}</button></span>`:""}</div>
+    ${editor?`<span class="btns"><button class="ed down" data-id="${esc(i.id)}">목록으로 내리기</button><button class="ed" data-id="${esc(i.id)}">수정</button><button class="ok ${on?"on":""}" data-id="${esc(i.id)}">${on?"검수 취소":"검수 완료"}</button></span>`:""}</div>
   </article>`}).join("");
 }
 
-async function save(items){
+function renderExtra(d,watch,excl){
+  if(!editor||!ready){$("extra").innerHTML="";$("dlbox").innerHTML="";return}
+  // 다가오는 기한: 최근 문서 전체의 카드·추가 확인 목록에서 오늘~30일
+  const seen=new Set(),up=[];
+  for(const doc of docs)for(const x of [...arr(doc.items),...arr(doc.watch)]){const n=dday(x.deadline);if(n===null||n<0||n>30)continue;const key=(x.url||x.title)+"|"+x.deadline;if(seen.has(key))continue;seen.add(key);up.push({...x,_n:n,_date:doc.date})}
+  up.sort((a,b)=>a._n-b._n);
+  $("dlbox").innerHTML=up.length?`<section class="dl" aria-label="다가오는 기한"><h2>다가오는 기한 (30일 이내 · 법무팀만 보임)</h2><ul>${up.slice(0,12).map(x=>{const u=safeUrl(x.url);return `<li>${ddChip(x)}<span class="chip">${esc(DN[x.dept]||x.dept)}</span>${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(x.title)}</a>`:esc(x.title)}<span class="note">${esc(x.deadline)} · ${esc(fmt(x._date))} 브리핑</span></li>`}).join("")}</ul></section>`:"";
+  const f=a=>dept==="all"?a:a.filter(x=>x.dept===dept);
+  const w=f(watch),ex=f(excl);
+  const row=(x,btn)=>{const u=safeUrl(x.url);return `<div class="row"><span class="chip">${esc(DN[x.dept]||x.dept||"기타")}</span>
+    <div><div class="t">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(x.title)} ↗</a>`:esc(x.title)}</div>
+    ${x.note?`<div class="n">${esc(x.note)}</div>`:""}
+    ${x.reason?`<div class="why"><b>${btn?"아래로 뺀 이유":"제외한 이유"}</b> · ${esc(x.reason)}</div>`:""}
+    <div class="sm">${esc(x.source||"")}${x.published?` · ${esc(x.published)}`:""} ${ddChip(x)}</div></div>
+    ${btn?`<button class="ok up" data-wid="${esc(x.id)}">카드로 올리기</button>`:"<span></span>"}</div>`};
+  $("extra").innerHTML=`<section class="sec" aria-label="추가 확인 목록"><h2>추가 확인 목록 <span class="note" style="display:inline">${w.length}건 · 법무팀만 보임</span></h2>
+    <p class="note">봇이 찾았지만 중요도가 낮다고 보고 핵심 카드에서 뺀 이슈입니다. 빼는 판단이 맞는지 확인하고, 필요하면 카드로 올리세요. 올린 카드는 검수 대기로 들어갑니다.</p>
+    ${w.length?`<div class="rows">${w.map(x=>row(x,true)).join("")}</div>`:`<div class="empty">이 부문에는 추가 확인 목록이 없습니다.</div>`}</section>
+    <section class="sec"><details class="ex"><summary>검토 후 제외 ${ex.length}건 (부문 무관·중복·홍보성 등)</summary>
+    <p class="note">봇이 살펴봤지만 회사 업무와 관련이 적거나 이미 다룬 사안이라 뺀 자료입니다.</p>
+    ${ex.length?`<div class="rows">${ex.map(x=>row(x,false)).join("")}</div>`:`<div class="empty">기록이 없습니다.</div>`}</details></section>`;
+}
+
+async function save(patch){
   const d=cur();if(!db||!d||busy)return;busy=true;$("msg").textContent="";
-  try{await db.doc("briefings/"+d.id).update({items,reviewedAt:new Date().toISOString()})}
+  if(Array.isArray(patch))patch={items:patch};
+  try{await db.doc("briefings/"+d.id).update({...patch,reviewedAt:new Date().toISOString()})}
   catch(e){$("msg").textContent=e&&e.code==="invalid_argument"?"검수 권한이 없습니다. 법무팀(편집 권한)만 검수할 수 있습니다.":"저장하지 못했습니다. 잠시 후 다시 눌러 주세요."}
   finally{busy=false}
 }
@@ -174,9 +230,21 @@ document.addEventListener("click",e=>{
   if(t.id==="prev"&&idx<docs.length-1){idx++;render();return}
   if(t.id==="next"&&idx>0){idx--;render();return}
   const d=cur();if(!d||!Array.isArray(d.items))return;
+  if(t.classList.contains("up")){const w=arr(d.watch).find(x=>x.id===t.dataset.wid);if(!w)return;
+    const pre={safety:"s",marketing:"m",construction:"c",business:"b",finance:"f",admin:"a"}[w.dept]||"x";
+    let n=1;while(d.items.some(i=>i.id===pre+n))n++;const id=pre+n;
+    const it={id,dept:w.dept,level:"low",status:"pending",title:w.title,summary:w.note||"",check:"",source:w.source||"",url:w.url||"",published:w.published||"",promotedFrom:w.id,botReason:w.reason||""};
+    if(w.deadline){it.deadline=w.deadline;it.deadlineLabel=w.deadlineLabel||""}if(w.team)it.team=w.team;
+    save({items:[...d.items.map(i=>({...i})),it],watch:arr(d.watch).filter(x=>x.id!==w.id)}).then(()=>{editing=id;draft={};render()});return}
+  if(t.classList.contains("down")){const i=d.items.find(x=>x.id===t.dataset.id);if(!i)return;
+    let k=1;while(arr(d.watch).some(x=>x.id==="w"+k))k++;
+    const w={id:"w"+k,dept:i.dept,title:i.title,note:i.summary||"",reason:"법무팀이 검수 중 핵심 카드에서 내림",source:i.source||"",url:i.url||"",published:i.published||""};
+    if(i.deadline){w.deadline=i.deadline;w.deadlineLabel=i.deadlineLabel||""}if(i.team)w.team=i.team;
+    save({items:d.items.filter(x=>x.id!==i.id).map(x=>({...x})),watch:[...arr(d.watch).map(x=>({...x})),w]});return}
   if(t.classList.contains("ed")){editing=t.dataset.id;draft={};render();return}
   if(t.id==="cancelEdit"){editing=null;draft={};render();return}
   if(t.id==="saveEdit"){const id=editing;const ch={...draft};if(ch.url&&!/^https?:\/\//i.test(ch.url)){$("msg").textContent="원문 링크는 http:// 또는 https://로 시작해야 합니다.";return}
+    if(ch.deadline&&!/^\d{4}-\d{2}-\d{2}$/.test(ch.deadline.trim())){$("msg").textContent="기한은 2026-12-31처럼 연-월-일로 적어 주세요.";return}if(ch.deadline!==undefined)ch.deadline=ch.deadline.trim();
     editing=null;draft={};save(d.items.map(i=>i.id===id?{...i,...ch}:{...i}));return}
   if(t.id==="approveAll"){save(d.items.map(i=>({...i,status:"approved"})));return}
   if(t.classList.contains("ok")){const id=t.dataset.id;save(d.items.map(i=>i.id===id?{...i,status:i.status==="approved"?"pending":"approved"}:{...i}));}
@@ -191,7 +259,7 @@ render();
   try{editor=!!(user&&(await user.canEdit()||await user.isOwner()))}catch(e){editor=false}
   db=await use("db");
   if(!db){ready=true;$("who").textContent="이 화면에서는 브리핑 데이터를 불러올 수 없습니다. claude.ai에 로그인한 상태로 열어 주세요.";render();return}
-  $("who").textContent=editor?"법무팀 검수 모드 · 카드마다 검수 완료를 누르면 전 직원 화면에 게시됩니다.":"법무팀 검수를 마친 이슈만 표시됩니다.";
+  $("who").textContent=editor?"법무팀 검수 모드 · 카드마다 검수 완료를 누르면 전 직원 화면에 게시됩니다. 아래 추가 확인 목록·제외 기록·다가오는 기한은 법무팀에게만 보입니다.":"법무팀 검수를 마친 이슈만 표시됩니다.";
   const timer=setTimeout(()=>{$("msg").textContent="데이터 연결이 지연되고 있습니다. 표시된 내용이 최신이 아닐 수 있습니다."},10000);
   db.collection("briefings").orderBy("date","desc").limit(60).onSnapshot(snap=>{
     const keep=cur()?.id;
