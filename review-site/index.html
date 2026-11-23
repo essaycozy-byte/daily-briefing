@@ -91,6 +91,7 @@ h1{font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0;text-wrap:balance;fo
 .dl ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
 .dl li{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:15px}
 details.ex summary{cursor:pointer;font-weight:700;font-size:17px;min-height:44px;display:flex;align-items:center}
+details.ex summary::before{content:"▸";margin-right:8px;transition:transform .15s}details.ex[open] summary::before{transform:rotate(90deg)}
 @media(max-width:600px){.row{grid-template-columns:1fr}}
 #msg{font-size:14px;color:var(--coral);margin:12px 0 0;min-height:1em}
 @media(max-width:600px){.all{margin-left:0;width:100%}.fig1{padding-right:18px;margin-right:18px}.st{margin-left:0}}

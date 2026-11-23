@@ -9,7 +9,7 @@
 
 | 경로 | 내용 |
 | --- | --- |
-| `review-site/index.html` | 법무팀 검수 화면. claude.ai 아티팩트로 게시되며, 내장 DB(`briefings/날짜` 문서)를 읽고 검수 완료·취소를 기록합니다. 편집 권한자만 검수 버튼이 보입니다. |
+| `review-site/index.html` | 법무팀 검수 화면. claude.ai 아티팩트로 게시되며, 내장 DB(`briefings/날짜` 문서)를 읽고 검수 완료·취소·카드 수정을 기록합니다. 편집 권한자에게만 검수 버튼과 다가오는 기한·추가 확인 목록(뺀 이유)·검토 후 제외 기록이 보입니다. |
 | `index.html` | 전 직원용 공개 페이지(읽기 전용). `data/briefings.json`을 읽어 표시합니다. GitHub Pages로 게시. |
 | `data/briefings.json` | 공개 데이터. 검수 완료(approved) 이슈만, 최근 60일. |
 | `tools/build.py` | 검수 화면 DB에서 읽은 브리핑 중 검수 완료 이슈만 골라 `briefings.json`을 갱신하는 스크립트. |
@@ -18,7 +18,7 @@
 
 ## 하루 흐름
 
-1. 06:43 — AI가 6개 부문(안전, 마케팅, 공사·현장, 사업, 재무, 경영지원)을 검색·요약해 검수 화면 DB에 '검수 대기'로 저장
+1. 06:43 — AI가 정부(정책브리핑·국가법령정보센터)·법원(대법원·헌재)·국회(국민참여입법센터)·주요 거래 신탁사·로펌 9곳·전문지·일간지를 확인해 6개 부문(안전, 마케팅, 공사·현장, 사업, 재무, 경영지원)으로 정리하고, 핵심 카드는 '검수 대기'로, 나머지는 추가 확인 목록(뺀 이유)·검토 후 제외 기록으로 저장
 2. 법무팀 검수 — 검수 화면에서 카드별 또는 일괄로 '검수 완료'
 3. 08:03, 11:47 — AI가 검수 완료본만 골라 `build.py`로 공개 데이터를 갱신하고 GitHub에 반영
 4. 전 직원 — 공개 페이지에서 로그인 없이 열람
@@ -34,15 +34,27 @@
     {
       "id": "s1", "dept": "safety", "level": "high", "status": "pending",
       "title": "…", "summary": "…", "check": "…",
-      "source": "고용노동부 보도자료", "url": "https://…", "published": "2026-11-12"
+      "source": "고용노동부 보도자료", "url": "https://…", "published": "2026-11-12",
+      "deadline": "2027-01-01", "deadlineLabel": "시행", "team": "안전팀"
     }
-  ]
+  ],
+  "watch": [
+    { "id": "w1", "dept": "construction", "title": "…", "note": "…",
+      "reason": "왜 핵심 카드에서 뺐는지", "source": "…", "url": "https://…", "published": "2026-11-04" }
+  ],
+  "excluded": [
+    { "dept": "admin", "title": "…", "reason": "제외 이유", "source": "…", "url": "https://…", "published": "2026-11-19" }
+  ],
+  "coverage": { "government": [ … ], "lawfirms": [ … ], "tradeMedia": [ … ], "newspapers": { … } }
 }
 ```
 
 - `dept`: safety · marketing · construction · business · finance · admin
 - `level`: high(주의) · mid(확인) · low(참고)
 - `status`: pending(검수 대기) · approved(검수 완료)
+- `deadline`·`deadlineLabel`: 시행일·의견 마감일 등 기한(검수 화면에 D-day 표시)
+- `team`: 관련 팀(화면에 표시하지 않음, 향후 팀별 구분용)
+- `watch`·`excluded`·`coverage`는 검수 화면(법무팀)에서만 쓰이고, 공개 데이터(`briefings.json`)에는 들어가지 않습니다.
 
 ## 로컬에서 공개 페이지 확인
 
